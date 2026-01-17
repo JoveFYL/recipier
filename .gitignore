@@ -1,1 +1,6 @@
 .env
+
+**/*.bin
+**/*.sqlite3
+__pycache__/
+*.pyc
