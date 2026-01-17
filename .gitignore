@@ -1,5 +1,7 @@
 .env
-
+data/
+recipe_db/
+venv/
 **/*.bin
 **/*.sqlite3
 __pycache__/

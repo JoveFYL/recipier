@@ -79,6 +79,7 @@ class WebCrawler:
     def extract_links(self, soup: BeautifulSoup, base_url: str) -> list[str]:
         """Extract all valid links from the page."""
         links = []
+        data_tracking_target_url_list = []
         for a in soup.find_all('a', href=True):
             href = a['href']
             if self.is_valid_link(href, base_url):
@@ -101,7 +102,7 @@ class WebCrawler:
                 print(f"[HTTP {response.status_code}] {url}")
                 return None
 
-            soup = BeautifulSoup(response.text, 'html.parser')
+            soup = BeautifulSoup(response.text, 'lxml')
 
             return {
                 'url': url,

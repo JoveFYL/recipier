@@ -7,24 +7,32 @@ from .database import get_chromadb_client
 
 def run_recipe_pipeline(seed_url, max_recipes=5):
     # init tools
-    crawler = AllRecipesCrawler(delay=1.0)
+    crawler = AllRecipesCrawler(delay=0.8)
     scraper = WebScraper()
     client = get_chromadb_client()
-    # Delete existing collection if it exists
     try:
-        client.delete_collection(name="recipes")
+        # client.delete_collection(name="recipes")
         print("🗑️  Deleted existing 'recipes' collection")
     except Exception as e:
         print(f"ℹ️  No existing collection to delete (or error: {e})")
 
     # Create fresh collection
     collection = client.get_or_create_collection(name="recipes")
-    # client.delete_collection(name="recipes")
 
-    # for url, info
-    crawl_results = crawler.crawl(seed_url, max_pages=max_recipes)
+    # Crawl pages (includes both recipes and category pages)
+    # But we want to scrape MORE than max_recipes pages to find enough recipes
+    crawl_results = crawler.crawl(seed_url, max_pages=max_recipes * 5)
 
-    for url, info in crawl_results.items():
+    # Filter to only actual recipe pages (not category pages)
+    recipe_urls = {url: info for url, info in crawl_results.items() 
+                   if '/recipe/' in url.lower()}
+    
+    print(f"\n🎯 Found {len(recipe_urls)} recipe pages out of {len(crawl_results)} crawled pages")
+    
+    # Limit to max_recipes
+    recipe_urls = dict(list(recipe_urls.items())[:max_recipes])
+    
+    for url, info in recipe_urls.items():
         print(f"📖 Scraping recipe: {info['title']}")
 
         # Get the BeautifulSoup object for the specific recipe
@@ -49,7 +57,7 @@ def run_recipe_pipeline(seed_url, max_recipes=5):
 
         except Exception as e:
             print(
-                f" Skipping {url} - possibly not a recipe page. Error: {e}")
+                f"⚠️  Skipping {url} - possibly not a recipe page. Error: {e}")
 
     print("\n✨ Ingestion Complete! Your RAG database is ready.")
     results = collection.query(
@@ -64,5 +72,5 @@ def run_recipe_pipeline(seed_url, max_recipes=5):
 
 if __name__ == "__main__":
     # Example Seed URL
-    START_URL = "https://www.allrecipes.com/recipe/125658/chicken-enchiladas-with-creamy-green-chile-sauce/"
-    run_recipe_pipeline(START_URL, max_recipes=20)
+    START_URL = "https://www.allrecipes.com/peanut-butter-and-jelly-french-toast-casserole-recipe-7371603"
+    run_recipe_pipeline(START_URL, max_recipes=10)
