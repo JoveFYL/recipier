@@ -10,32 +10,15 @@ class AllRecipesCrawler(WebCrawler):
 
     def is_valid_link(self, href: str, base_url: str) -> bool:
         """
-        OVERRIDE: Follow both recipe pages AND category pages.
-        - Recipe pages: contain '/recipe/' (these are what we want to scrape)
-        - Category pages: contain '/recipes/' (these lead to recipe pages)
-        
-        This allows the crawler to navigate through categories to find recipes.
+        OVERRIDE: Only follow links that look like actual recipes.
+        AllRecipes recipes usually contain '/recipe/' in the URL.
         """
         # First, run the parent's basic checks (anchors, mailto, etc.)
         if not super().is_valid_link(href, base_url):
             return False
 
-        # Accept both recipe pages and category/listing pages
-        href_lower = href.lower()
-        
-        # Follow recipe pages (what we want to scrape)
-        if '/recipe/' in href_lower or '-recipe-' in href_lower:
-            return True
-        
-        # Follow category pages (these contain links to recipes)
-        if '/recipes/' in href_lower:
-            return True
-        
-        # Also follow the homepage (has links to categories)
-        if href_lower.endswith('allrecipes.com') or href_lower.endswith('allrecipes.com/'):
-            return True
-        
-        return False
+        # Then, add our custom site-specific filter
+        return "/recipe/" in href.lower() or "-recipe-" in href.lower()
 
     def get_title(self, url: str, soup: BeautifulSoup) -> str:
         """
