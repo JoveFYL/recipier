@@ -65,6 +65,12 @@ class WebCrawler:
         # Remove script and style elements
         for tag in soup(['script', 'style', 'nav', 'footer', 'header']):
             tag.decompose()
+
+        for tag in soup.find_all(
+            ['div', 'gwd-google-ad'],
+            class_=lambda c: c and any('video' in cls for cls in c)
+        ):
+            tag.decompose()
         return soup.get_text(separator=' ', strip=True)[:5000]
 
     def is_valid_link(self, href: str, base_url: str) -> bool:

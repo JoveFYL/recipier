@@ -7,7 +7,7 @@ from .database import get_chromadb_client
 
 def run_recipe_pipeline(seed_url, max_recipes=5):
     # init tools
-    crawler = AllRecipesCrawler(delay=0.8)
+    crawler = AllRecipesCrawler(delay=0.9)
     scraper = WebScraper()
     client = get_chromadb_client()
     try:
@@ -21,17 +21,15 @@ def run_recipe_pipeline(seed_url, max_recipes=5):
 
     # Crawl pages (includes both recipes and category pages)
     # But we want to scrape MORE than max_recipes pages to find enough recipes
-    crawl_results = crawler.crawl(seed_url, max_pages=max_recipes * 5)
+    crawl_results = crawler.crawl(seed_url, max_pages=max_recipes)
 
     # Filter to only actual recipe pages (not category pages)
-    recipe_urls = {url: info for url, info in crawl_results.items() 
+    recipe_urls = {url: info for url, info in crawl_results.items()
                    if '/recipe/' in url.lower()}
-    
-    print(f"\n🎯 Found {len(recipe_urls)} recipe pages out of {len(crawl_results)} crawled pages")
-    
+
     # Limit to max_recipes
     recipe_urls = dict(list(recipe_urls.items())[:max_recipes])
-    
+
     for url, info in recipe_urls.items():
         print(f"📖 Scraping recipe: {info['title']}")
 
@@ -61,7 +59,7 @@ def run_recipe_pipeline(seed_url, max_recipes=5):
 
     print("\n✨ Ingestion Complete! Your RAG database is ready.")
     results = collection.query(
-        query_texts=["spinach chicken"],
+        query_texts=["chocolate"],
         n_results=5,
         include=["metadatas", "documents", "distances"]
     )
@@ -72,5 +70,5 @@ def run_recipe_pipeline(seed_url, max_recipes=5):
 
 if __name__ == "__main__":
     # Example Seed URL
-    START_URL = "https://www.allrecipes.com/peanut-butter-and-jelly-french-toast-casserole-recipe-7371603"
-    run_recipe_pipeline(START_URL, max_recipes=10)
+    START_URL = "https://www.allrecipes.com/recipes/17057/everyday-cooking/more-meal-ideas/5-ingredients/main-dishes/"
+    run_recipe_pipeline(START_URL, max_recipes=2000)
