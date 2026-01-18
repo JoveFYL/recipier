@@ -1,6 +1,7 @@
 # Recipier
 
 Your AI-powered "Chef in Your Pocket"
+[Try it here!](https://recipier.streamlit.app/)
 
 ## Inspiration
 
