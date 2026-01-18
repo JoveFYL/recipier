@@ -1,4 +1,6 @@
 """Backend integration for recipe search."""
+from ..database import HistoryDB, SearchEntry
+from backend import HybridRecipeSearch
 import sys
 from pathlib import Path
 from typing import Optional
@@ -7,9 +9,6 @@ from typing import Optional
 project_root = Path(__file__).parent.parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
-
-from backend import HybridRecipeSearch
-from ..database import HistoryDB, SearchEntry
 
 
 class SearchHandler:

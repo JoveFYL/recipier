@@ -75,7 +75,7 @@ def run_recipe_pipeline(seed_url, max_recipes=5, debug=False):
     searcher = HybridRecipeSearch()
 
     # Test search
-    query = "seaweed"
+    query = "ayam bakar"
     results = searcher.hybrid_search(query, top_k=3)
 
     # Display results
@@ -101,4 +101,4 @@ if __name__ == "__main__":
     START_URL = "https://www.allrecipes.com/recipes/698/world-cuisine/asian/indonesian/"
 
     # Enable debug mode to see link discovery details
-    run_recipe_pipeline(START_URL, max_recipes=1000)
+    run_recipe_pipeline(START_URL, max_recipes=1)
