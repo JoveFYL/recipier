@@ -92,6 +92,71 @@ class SearchHandler:
                 'entry_id': None
             }
 
+    def search_stream(self, query: str):
+        """Perform a recipe search with streaming response.
+
+        Args:
+            query: Natural language recipe query
+
+        Yields:
+            Dict with keys:
+                - type: "chunk" | "error" | "done"
+                - content: Text chunk (for type="chunk")
+                - error: Error message (for type="error")
+                - entry_id: Database ID (for type="done")
+        """
+        if not query or not query.strip():
+            yield {
+                'type': 'error',
+                'error': 'Please enter a search query'
+            }
+            return
+
+        query = query.strip()
+
+        try:
+            full_answer = ""
+            sources = None
+            
+            # Stream from backend
+            for event in self.searcher.search_and_generate_stream(query):
+                if event['type'] == 'sources':
+                    # Store sources for later but don't yield
+                    sources = event['sources']
+                    continue
+                elif event['type'] == 'chunk':
+                    # Yield each chunk as it arrives
+                    full_answer += event['content']
+                    yield {
+                        'type': 'chunk',
+                        'content': event['content']
+                    }
+                elif event['type'] == 'error':
+                    yield {
+                        'type': 'error',
+                        'error': event['error']
+                    }
+                    return
+                elif event['type'] == 'done':
+                    # Save to history
+                    entry = SearchEntry.create(
+                        query=query,
+                        full_response=full_answer,
+                        tokens_used=None  # Token counting not available with streaming
+                    )
+                    entry_id = self.db.add_search(entry)
+                    
+                    yield {
+                        'type': 'done',
+                        'entry_id': entry_id
+                    }
+
+        except Exception as e:
+            yield {
+                'type': 'error',
+                'error': f'Search failed: {str(e)}'
+            }
+
     def get_cached_response(self, search_id: int) -> Optional[str]:
         """Get a cached response from history.
 

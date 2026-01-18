@@ -262,6 +262,108 @@ class HybridRecipeSearch:
                 "context_used": context
             }
 
+    def search_and_generate_stream(
+        self,
+        query: str,
+        top_k: int = 5,
+        model: str = "gpt-4o-mini",
+        temperature: float = 0.7,
+        max_tokens: int = 1000
+    ):
+        """
+        Perform hybrid search and generate answer using LLM with streaming.
+
+        Args:
+            query: User's recipe query
+            top_k: Number of context chunks to retrieve
+            model: OpenAI model to use (gpt-4o-mini is cost-effective)
+            temperature: LLM temperature (0-1)
+            max_tokens: Maximum tokens in response
+
+        Yields:
+            Dict with keys:
+                - type: "chunk" | "sources" | "error" | "done"
+                - content: Text chunk (for type="chunk")
+                - sources: Retrieved chunks (for type="sources")
+                - context_used: Formatted context (for type="sources")
+                - error: Error message (for type="error")
+                - model: Model name (for type="done")
+                - tokens_used: Total tokens (for type="done")
+
+        Example:
+            >>> searcher = HybridRecipeSearch()
+            >>> for event in searcher.search_and_generate_stream("How do I make chicken alfredo?"):
+            ...     if event['type'] == 'chunk':
+            ...         print(event['content'], end='', flush=True)
+        """
+        if not self.openai_client:
+            yield {
+                "type": "error",
+                "error": "OpenAI API key not configured"
+            }
+            return
+
+        # 1. Hybrid search to get relevant chunks
+        print(f"🔍 Searching for: {query}")
+        search_results = self.hybrid_search(query, top_k=top_k)
+
+        # 2. Format context from retrieved chunks
+        context = self._format_context(search_results)
+
+        # Yield sources immediately
+        yield {
+            "type": "sources",
+            "sources": search_results,
+            "context_used": context
+        }
+
+        # 3. Create prompt for LLM
+        prompt = self._create_prompt(query, context)
+
+        # 4. Call OpenAI API with streaming
+        print(f"🤖 Generating response with {model}...")
+        try:
+            stream = self.openai_client.chat.completions.create(
+                model=model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are a helpful cooking assistant that provides recipe advice based on the given context. Always cite specific recipes when answering."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                temperature=temperature,
+                max_tokens=max_tokens,
+                stream=True
+            )
+
+            full_answer = ""
+            for chunk in stream:
+                if chunk.choices[0].delta.content:
+                    content = chunk.choices[0].delta.content
+                    full_answer += content
+                    yield {
+                        "type": "chunk",
+                        "content": content
+                    }
+
+            # Yield completion event
+            yield {
+                "type": "done",
+                "model": model,
+                "answer": full_answer
+            }
+
+        except Exception as e:
+            print(f"❌ Error calling OpenAI API: {e}")
+            yield {
+                "type": "error",
+                "error": str(e)
+            }
+
     def _format_context(self, search_results: dict) -> str:
         """
         Format search results into context string for LLM.

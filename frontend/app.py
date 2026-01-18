@@ -74,28 +74,41 @@ def main():
             # Clear previous response before searching
             StateManager.set_current_response(None)
             StateManager.set_loading(True)
+            StateManager.clear_error()
+            StateManager.set_current_query(query)
 
-            # Show loading state
-            render_recipe_card(
-                response=None,
-                query=None,
-                is_loading=True,
-                error=None
-            )
-
-            # Perform search
-            result = search_handler.search(query)
-
-            if result['success']:
-                StateManager.set_current_query(query)
-                StateManager.set_current_response(result['answer'])
-                StateManager.clear_error()
-            else:
-                StateManager.set_error(result['error'])
+            # Create container for streaming response
+            st.markdown(f"### 🔍 Searching for: *{query}*")
+            st.markdown("---")
+            
+            # Create a placeholder for the streaming content
+            response_placeholder = st.empty()
+            full_response = ""
+            
+            # Stream the response
+            try:
+                for event in search_handler.search_stream(query):
+                    if event['type'] == 'chunk':
+                        # Append chunk and update display
+                        full_response += event['content']
+                        response_placeholder.markdown(full_response)
+                    elif event['type'] == 'error':
+                        StateManager.set_error(event['error'])
+                        StateManager.set_current_response(None)
+                        StateManager.set_loading(False)
+                        st.rerun()
+                        break
+                    elif event['type'] == 'done':
+                        # Save the complete response
+                        StateManager.set_current_response(full_response)
+                        StateManager.set_loading(False)
+                        # No need to rerun, response is already displayed
+                        break
+            except Exception as e:
+                StateManager.set_error(f"Streaming failed: {str(e)}")
                 StateManager.set_current_response(None)
-
-            StateManager.set_loading(False)
-            st.rerun()
+                StateManager.set_loading(False)
+                st.rerun()
         else:
             # Display current results (not loading)
             render_recipe_card(
