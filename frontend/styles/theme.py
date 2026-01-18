@@ -41,9 +41,38 @@ def get_theme_css() -> str:
         color: {colors.text};
     }}
 
-    /* Hide all buttons in sidebar (only show HTML history) */
+    /* Style sidebar history buttons */
     [data-testid="stSidebar"] .stButton {{
-        display: none !important;
+        margin-bottom: 2px;
+    }}
+    
+    [data-testid="stSidebar"] .stButton > button {{
+        background-color: transparent;
+        color: {colors.text};
+        border: none;
+        border-radius: {RADIUS['md']};
+        padding: 10px 12px;
+        font-weight: normal;
+        text-align: left;
+        white-space: pre-line;
+        line-height: 1.4;
+        font-size: {FONTS['size_sm']};
+        transition: background-color 0.15s ease;
+    }}
+    
+    [data-testid="stSidebar"] .stButton > button:hover {{
+        background-color: {colors.background};
+        transform: none;
+    }}
+    
+    /* Primary button (selected state) in sidebar */
+    [data-testid="stSidebar"] .stButton > button[kind="primary"] {{
+        background-color: {colors.background};
+    }}
+    
+    /* Secondary button (normal state) in sidebar */
+    [data-testid="stSidebar"] .stButton > button[kind="secondary"] {{
+        background-color: transparent;
     }}
 
     /* ===== Headers ===== */

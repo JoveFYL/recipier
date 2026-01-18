@@ -26,23 +26,26 @@ def render_sidebar(
 </div>""", unsafe_allow_html=True)
         return
 
-    # Build the contiguous history list HTML
-    html_items = []
+    # Render each history item as a clickable button
     for entry in history:
         time_str = _format_time(entry.timestamp)
         display_query = entry.query[:50] + '...' if len(entry.query) > 50 else entry.query
-        selected_class = 'selected' if entry.id == selected_id else ''
-
-        html_items.append(f'''<div class="history-item {selected_class}" data-id="{entry.id}">
-    <div class="history-query">{_escape_html(display_query)}</div>
-    <div class="history-time">{time_str}</div>
-</div>''')
-
-    # Render as a single HTML block for contiguous styling
-    # IMPORTANT: No leading spaces in the HTML string (markdown treats indented text as code)
-    st.markdown(f'''<div class="history-container">
-{''.join(html_items)}
-</div>''', unsafe_allow_html=True)
+        
+        # Create button label with query and time
+        button_label = f"{display_query}\n{time_str}"
+        
+        # Use Streamlit button - full width, with custom styling based on selection
+        button_type = "primary" if entry.id == selected_id else "secondary"
+        
+        if st.button(
+            button_label,
+            key=f"history_{entry.id}",
+            use_container_width=True,
+            type=button_type,
+            help=entry.query  # Show full query on hover
+        ):
+            on_select(entry.id)
+            st.rerun()
 
 
 def _escape_html(text: str) -> str:
