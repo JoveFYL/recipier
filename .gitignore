@@ -6,3 +6,4 @@ venv/
 **/*.sqlite3
 __pycache__/
 *.pyc
+.checkpoints/
